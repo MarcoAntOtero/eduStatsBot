@@ -5,38 +5,33 @@ import os
 import time
 
 
-# This script collects data from Reddit using PRAW (Python Reddit API Wrapper) and saves it to a CSV file.
-#keywords = ["failing", "drop out", "no internet", "burned out", "behind in school", "can't focus", "cannot focus", "overwhelmed", "no laptop",
-#            "struggling","difficult", "hard to learn", "can't keep up", "not enough","fail", "support", "resources",
-#            "assistance", "guidance", "tutoring" , "not passing", "can't"]
-#subreddits = ["GenZ","college","highschool"]
-
-
 keywords = [
     # Emotional strain & mental health
-    "burnt out", "mental breakdown", "can't focus", "cannot focus", "overwhelmed",
-    "panic attacks", "i feel like a failure", "cried", "losing motivation",
-    "depressed", "i hate myself", "stressed out", "I'm cooked", "i'm cooked", "need to lock in", "can't lock in", "cannot lock in"
+    "burnt out", "mental breakdown", "can't focus", "cannot focus", "overwhelmed", "lose my mind","losing my mind"
+    "panic attacks", "feel like a failure", "am a failure", "cried", "losing motivation", "hate my major", "why am I even doing this?", "college has been horrible",
+    "depressed", "hate myself", "stressed out", "I'm cooked", "i'm cooked", "am cooked", "need to lock in", "can't lock in", "cannot lock in",
+    "overthinking", "so stressed", "disappointed in myself", "feeling overwhelmed", "withdraw", "am panicking",
+    "aimlessness", "wasted all my potential", "wasted my time", "so exhausted", "feel exhausted", "am exhausted",
 
     # Academic struggle
-    "failing classes", "barely passing", "not going to graduate",
-    "behind in school", "struggling to keep up", "my gpa is",
-    "dropped out", "can't pass", "retaking a class", "low grades",
-    "struggling with math", "hate math", "hard class", "don't understand",
-    "nothing is clicking", "don't get it", "difficult exam", "placed in wrong class",
-
+    "failing classes", "barely passing", "not going to graduate", "wont graduate", "won't graduate" "killing me", "falling behind"
+    "behind in school", "behind in my classes", "behind in all my classes","struggling to keep up", "my gpa is", "too many assignments",
+    "dropped out", "can't pass", "retaking a class", "low grades", "how am i going to survive", "college lies", "flunking",
+    "struggling with math", "hate math", "hard class", "don't understand", "screw over", "screwed over", "i'm screwed",
+    "nothing is clicking", "don't get it", "difficult exam", "placed in wrong class", "disappointed in myself",
+    "struggle to learn", "failed a class", "behind on all my work", "behind on my work", "behind on work",
+ 
     # Institutional barriers
     "no advisor helped me", "bad advising", "school won’t let me", "can’t afford",
-    "debt", "$1000 for a class", "financial hold",
+    "debt", "financial hold",
 
     # Academic decisions / setbacks
-    "withdrew from class", "academic probation", "took a gap semester",
+    "withdrew from", "academic probation", "took a gap semester",
     "course recovery", "transfer schools", "going back to school",
-    "community college",
 
     # Hopelessness
-    "i feel dumb", "i'm not smart enough", "wish i could redo it",
-    "no hope", "what should i do"
+    "i feel dumb", "i'm not smart enough", "wish i could redo it", "hopeless",
+    "no hope", "sm anxiety", "worrying about", "have anxiety"
 ]
 
 
@@ -83,8 +78,7 @@ def continuous_collection(filename):
     # Continuously collect data from Reddit.
     r = config.authenticateReddit()
     target_subreddits = "+".join(subreddits)
-    count = 0
-    while count < 5:
+    while True:
         print("Collecting data...")
         try:
             for submission in r.subreddit(target_subreddits).stream_submissions(skip_existing=True):
@@ -116,13 +110,11 @@ def continuous_collection(filename):
                             writer.writer()
                         writer.writerow(new_row)
 
-                    print(f"Matched: {submission.title[:60]}")
-                    count = count + 1
         except Exception as e:
             print(f"Error: {e}")
             time.sleep(60)
 
-def run_bot():
+def main():
     # Run the bot to post data to Reddit.
     print("Bot is running...")
     r = config.authenticateReddit()
@@ -142,70 +134,5 @@ def run_bot():
         save_data_to_csv(valid_posts,"data/reddit_data_v2.csv")
     
 
-run_bot()  # Call the function to run the bot
-
-
-
-
-
-
-
-
-'''
-# Load the data
-df = pd.read_csv("data/cleaned2.csv")
-df = df[["state", "percent_children_without_internet_access"]]
-df = df.sort_values(by="percent_children_without_internet_access", ascending=False)
-
-
-# Get the top 5 states with the highest percent of children without internet access
-top5 = df.head(5)
-worst_state = top5.iloc[0]
-title = "[OC] Top 5 U.S. States with the Highest Percent of Children Without Internet Access (NCES 2021)"
-caption = (
-    "**Data source:** U.S. Department of Commerce, Census Bureau, 2021 ACS PUMS (cleaned via NCES tables)**\n"
-    "**Tools used:** Python, pandas, matplotlib**\n"
-    "*Quote from:* Laura Bestler, *Is there a Correlation between the Digital Divide and College Access?*\n\n"
-    f"**Worst states for children's internet access**\n"
-    f"In **{worst_state['state']}**, **{worst_state['percent_children_without_internet_access']:.1f}%** "
-    "of children do not have internet access at home.\n"
-    "Quote: 'Several studies show that youth with digital access at both home and school perform better academically than those with access only at school.'"
-)
-
-# Create a post with an image in the dataisbeautiful subreddit
-subreddit = reddit.subreddit("dataisbeautiful")
-
-image_post = subreddit.submit_image(title, image_path="plot.png")
-image_post.reply(caption)
-
-print(f"Image post created: {image_post.title} - {image_post.url}")
-
-subreddit = reddit.subreddit("test")
-
-title = "Test Post"
-body = "This is a test post created by the EduStatsBot."
-post = subreddit.submit(title, selftext=body)
-
-print(f"Post created: {post.title} - {post.url}")
-
-
-# Create the plot
-plt.figure(figsize=(8, 4))
-plt.barh(top5["state"], top5["percent_children_without_internet_access"], color='skyblue')
-plt.xlabel("percent_children_without_internet_access")
-plt.title("Top 5 States with Highest Percent of Children without Internet Access")
-plt.tight_layout()
-plt.gca().invert_yaxis()
-plt.savefig("plot.png", dpi=300)
-
-
-df = df[["State", "Percent Households with internet access"]]
-df = df.rename(columns={
-    "State": "state",
-    "Number of children ages 3 to 18 living in households(in thousands),": "number_of_children_ages_3_to_18",
-    "Percentage of children with any type of computer or smartphone,": "percent_children_with_computer_or_smartphone",
-    "Percentage distribution of children with internet access": "percent_children_with_internet_access",
-    "Percentage distribution of children with no internet access": "percent_children_without_internet_access",
-})
-df.to_csv("data/cleaned2.csv", index=False)
-})'''
+if __name__ == "__main__":
+    main()  # Call the function to run the bot
