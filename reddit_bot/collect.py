@@ -1,44 +1,37 @@
 import config
 import csv
-from datetime import datetime
-import os
-import time
+import json 
 
-
-keywords = [
-    # Emotional strain & mental health
-    "burnt out", "mental breakdown", "can't focus", "cannot focus", "overwhelmed", "lose my mind","losing my mind"
-    "panic attacks", "feel like a failure", "am a failure", "cried", "losing motivation", "hate my major", "why am I even doing this?", "college has been horrible",
-    "depressed", "hate myself", "stressed out", "I'm cooked", "i'm cooked", "am cooked", "need to lock in", "can't lock in", "cannot lock in",
-    "overthinking", "so stressed", "disappointed in myself", "feeling overwhelmed", "withdraw", "am panicking",
-    "aimlessness", "wasted all my potential", "wasted my time", "so exhausted", "feel exhausted", "am exhausted",
-
-    # Academic struggle
-    "failing classes", "barely passing", "not going to graduate", "wont graduate", "won't graduate" "killing me", "falling behind"
-    "behind in school", "behind in my classes", "behind in all my classes","struggling to keep up", "my gpa is", "too many assignments",
-    "dropped out", "can't pass", "retaking a class", "low grades", "how am i going to survive", "college lies", "flunking",
-    "struggling with math", "hate math", "hard class", "don't understand", "screw over", "screwed over", "i'm screwed",
-    "nothing is clicking", "don't get it", "difficult exam", "placed in wrong class", "disappointed in myself",
-    "struggle to learn", "failed a class", "behind on all my work", "behind on my work", "behind on work",
- 
-    # Institutional barriers
-    "no advisor helped me", "bad advising", "school won’t let me", "can’t afford",
-    "debt", "financial hold",
-
-    # Academic decisions / setbacks
-    "withdrew from", "academic probation", "took a gap semester",
-    "course recovery", "transfer schools", "going back to school",
-
-    # Hopelessness
-    "i feel dumb", "i'm not smart enough", "wish i could redo it", "hopeless",
-    "no hope", "sm anxiety", "worrying about", "have anxiety"
-]
-
+def load_keywords():
+    # Load keywords from a JSON file or define them directly in the code.
+    try:
+        with open("data/keywords.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("Keywords file not found. Using default keywords.")
+        # If the file is not found, use the default keywords defined below.
+        return ("burnt out", "mental breakdown", "can't focus", "cannot focus", "overwhelmed", "lose my mind")
+def load_seen_ids():
+    # Load seen IDs from a JSON file or define them directly in the code.
+    try:
+        with open("data/seen_ids.json", "r", encoding="utf-8") as f:
+            return set(json.load(f))
+    except FileNotFoundError:
+        return set()
+def add_seen_ids(post):
+    try:
+        with open("data/seen_ids.json", "w") as f:
+            json.dump(post, f, indent=4)
+    except FileNotFoundError:
+        print("Seen IDs file not found.")
 
 subreddits = ["GenZ","college","highschool","Adulting","CollegeRant","ApplyingToCollege"]
 
 
-def collect_data_subreddit(keywords,reddit):
+def collect_data():
+    r = config.authenticateReddit()
+    keywords = load_keywords()
+    seen_ids = load_seen_ids()  # Load seen IDs to avoid duplicates
     # Create a list to store posts that match the keywords
     for subreddit in subreddits:
 
@@ -47,23 +40,35 @@ def collect_data_subreddit(keywords,reddit):
         # Iterate through the new submissions in the subreddit
         # Limit to the most recent 100 submissions
 
-        for submission in reddit.subreddit(subreddit).new(limit=100):
+        for post in r.subreddit(subreddit).new(limit=100):
 
-            text = (submission.title + " " + (submission.selftext or "")).lower()
+            if post.id in seen_ids:
+                # If the post ID is already seen, skip it
+                continue
+            combined_text = (post.title + " " + (post.selftext or "")).lower()
 
-            if any(keyword.lower() in text for keyword in keywords):
+            if any(keyword.lower() in combined_text for keyword in keywords):
                 # If any keyword is found in the title or selftext, add the submission to the data list
-                # yield do not return, it will yield the data to the caller
-                #appended in run_bot function
-                yield{
-                    "title": submission.title,
-                    "selftext": submission.selftext,
-                    "url": submission.url,
-                    "created_utc": datetime.utcfromtimestamp(submission.created_utc),
-                    "subreddit": subreddit,
-                    "author": str(submission.author),
-                }
+                save_post_to_csv(post) # add to csv
+                seen_ids.add(post.id)  # Add the post ID to the seen IDs set
+    add_seen_ids(list(seen_ids))  # Save the updated seen IDs to the file
 
+def save_post_to_csv(post):
+    # Save a single post to a CSV file.
+    filename = "data/reddit_data_v2.csv"
+    with open(filename, mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f, quoting=csv.QUOTE_ALL)
+        if f.tell() == 0:
+            writer.writeheader(["title","selftext","url","created_utc","subreddit","author"])
+        writer.writerow([post.title, post.selftext, post.url, post.created_utc, str(post.subreddit), str(post.author)])
+
+
+
+
+if __name__ == "__main__":
+    collect_data()  # Call the function to run the bot
+
+'''
 def save_data_to_csv(data, filename):
     # Save the collected data to a CSV file.
     os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -73,6 +78,10 @@ def save_data_to_csv(data, filename):
         writer.writeheader() # writes header inside data file
         for row in data:
             writer.writerow(row)
+
+    with open("data/reddit_data_v2.json", "a", encoding='utf-8') as f:
+        writer= csv.write
+        json.dump(data, json_file, indent=4, ensure_ascii=False)
 
 def continuous_collection(filename):
     # Continuously collect data from Reddit.
@@ -113,8 +122,7 @@ def continuous_collection(filename):
         except Exception as e:
             print(f"Error: {e}")
             time.sleep(60)
-
-def main():
+            def main():
     # Run the bot to post data to Reddit.
     print("Bot is running...")
     r = config.authenticateReddit()
@@ -133,6 +141,4 @@ def main():
         # Save the data to a CSV file
         save_data_to_csv(valid_posts,"data/reddit_data_v2.csv")
     
-
-if __name__ == "__main__":
-    main()  # Call the function to run the bot
+'''
