@@ -3,11 +3,13 @@ import seaborn as sns
 import pandas as pd
 import json
 from datetime import date
-
+import logging
+from lock import file_lock  # Import the file lock for thread-safe file operations
 def create_data(type='',number_data_points=5):
     # Load keyword counts from a JSON file
-    with open("data/keyword_counts.json", "r") as f:
-        kw_counts = json.load(f)
+    with file_lock:
+        with open("data/keyword_counts.json", "r") as f:
+            kw_counts = json.load(f)
 
     #Sorted items
     kw_counts = sorted(kw_counts.items(), key=lambda item: item[1], reverse=True) # sorts dictionary by keyword value in reverse(first is highest)
@@ -43,6 +45,7 @@ def create_data(type='',number_data_points=5):
 
     # Save to file
     current_date = date.today()
+
     if(type == 'kw'):
         # Styling
         plt.xlabel("Number of Mentions", color="#323232", size = 16)
@@ -57,7 +60,7 @@ def create_data(type='',number_data_points=5):
         plt.tight_layout()
         plt.savefig(f"created_data/{current_date}_subreddit.png", dpi=300)
     else:
-        print("Error has occured")
+        logging.error("Error has occured")
 
 if __name__ == "__main__":
 
