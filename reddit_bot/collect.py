@@ -1,10 +1,10 @@
-import config
+import logging
+from reddit_bot.config import authenticateReddit
 import csv
 import json 
 import time
 from datetime import datetime, timezone, timedelta
-from lock import file_lock  # Import the file lock for thread-safe file operations
-import logging
+from reddit_bot.lock import file_lock  # Import the file lock for thread-safe file operations
 
 subreddits = ["GenZ","college","highschool","Adulting","CollegeRant","ApplyingToCollege"]
 
@@ -35,7 +35,7 @@ def add_seen_ids(post):
 
 
 def collect_data():
-    r = config.authenticateReddit()
+    r = authenticateReddit()
     keywords = load_keywords()
     seen_ids = load_seen_ids()  # Load seen IDs to avoid duplicates
     # Create a list to store posts that match the keywords
@@ -61,16 +61,23 @@ def collect_data():
 
 def continuous_collection():
     # Continuously collect data from Reddit.
-    r = config.authenticateReddit()
+    r = authenticateReddit()
     keywords = load_keywords()
     seen_ids = load_seen_ids()  # Load seen IDs to avoid duplicates
-    target_subreddits = "+".join(subreddits)
     last_add = time.time()
     last_prune = time.time()  # Initialize last prune time
 
     while True:
         try:
-            for post in r.subreddit(target_subreddits).stream_submissions(skip_existing=True):
+            target_subreddits = "+".join(subreddits)
+            sub = r.subreddit(target_subreddits)
+            logging.info(f"Starting stream for: {target_subreddits}")
+            for post in sub.stream.submissions(skip_existing=True, pause_after=3):
+                if post is None:  # No new posts
+                    logging.debug("⏳ No new posts, waiting...")
+                    time.sleep(30)
+                    continue
+                logging.info(f"📝 New post in r/{post.subreddit}: {post.title[:50]}...")
                 if post.id in seen_ids:
                     # If the post ID is already seen, skip it
                     continue
@@ -81,6 +88,7 @@ def continuous_collection():
                     # If any keyword is found in the title or selftext, add the submission to the data list
                     save_post_to_csv(post) # add to csv
                     seen_ids[post.id] = post.created_utc  # Add the post ID to the seen IDs set
+                    logging.info(f"Post saved: {post.title} (ID: {post.id})")
 
                     # After 605 seconds add to json
                     if ((time.time() - last_add) > 605): # 10 minutes + 5s buffer
@@ -112,7 +120,7 @@ def save_post_to_csv(post):
                     writer.writeheader(["title","selftext","url","created_utc","subreddit","author"])
                 writer.writerow([post.title, post.selftext, post.url, post.created_utc, str(post.subreddit), str(post.author)])
     except Exception as e:
-        logging(f"Error saving post to CSV: {e}")
+        logging.error(f"Error saving post to CSV: {e}")
 
 
 def prune_old_ids(seen_ids, max_age_days=30):
