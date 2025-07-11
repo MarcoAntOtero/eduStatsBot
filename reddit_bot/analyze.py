@@ -1,7 +1,7 @@
 import pandas as pd
-from collect import load_keywords
+from reddit_bot.collect import load_keywords
 import json
-from lock import file_lock  # Import the file lock for thread-safe file operations
+from reddit_bot.lock import file_lock  # Import the file lock for thread-safe file operations
 
 def clean_and_analyze(filename):
     with file_lock:  # Ensure thread-safe file access

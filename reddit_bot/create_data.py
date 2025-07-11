@@ -4,7 +4,7 @@ import pandas as pd
 import json
 from datetime import date
 import logging
-from lock import file_lock  # Import the file lock for thread-safe file operations
+from reddit_bot.lock import file_lock  # Import the file lock for thread-safe file operations
 def create_data(type='',number_data_points=5):
     # Load keyword counts from a JSON file
     with file_lock:
