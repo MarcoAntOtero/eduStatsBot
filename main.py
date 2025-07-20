@@ -11,8 +11,9 @@ logging.basicConfig(
 )
 from reddit_bot.collect import continuous_collection
 from reddit_bot.analyze import clean_and_analyze
-from reddit_bot.create_data import create_data
-from reddit_bot.post_results import post_results
+from reddit_bot.create_data import create_weekly_data
+from reddit_bot.create_data import create_data_alltime
+#from reddit_bot.post_results import post_results
 
 if __name__ == "__main__":
     # Start the data collection thread
@@ -21,8 +22,10 @@ if __name__ == "__main__":
 
     # Schedule the tasks
     schedule.every().day.at("12:00").do(lambda:clean_and_analyze("data/reddit_data_v2.csv"))
-    schedule.every().sunday.at("12:00").do(lambda: create_data(type='kw', number_data_points=10))
-    schedule.every().sunday.at("12:05").do(post_results)
+    schedule.every().sunday.at("12:01").do(lambda: create_weekly_data(number_data_points=10))
+    schedule.every().sunday.at("12:02").do(create_data_alltime)
+    #schedule.every().sunday.at("12:05").do(post_results)
+
     try:
         while True:
             schedule.run_pending()
