@@ -126,7 +126,8 @@ def save_post_to_csv(post):
 def prune_old_ids(seen_ids, max_age_days=30):
     """Remove IDs older than `max_age_days` to save memory."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
-    return {id: ts for id, ts in seen_ids.items() if ts > cutoff}
+    cutoff_timestamp = cutoff.timestamp()
+    return {id: ts for id, ts in seen_ids.items() if ts > cutoff_timestamp}
 
 
 if __name__ == "__main__":
