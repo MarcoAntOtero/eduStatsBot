@@ -5,30 +5,27 @@ import json
 from datetime import date
 from reddit_bot.lock import file_lock  # Import the file lock for thread-safe file operations
 
-def create_weekly_data(number_data_points=5):
+def create_weekly_data(number_data_points=10):
     # Load keyword counts from a JSON file
     with file_lock:
         with open("data/keyword_counts.json", "r") as f:
             kw_counts = json.load(f)
 
     #Sorted items
-    kw_counts = sorted(kw_counts.items(), key=lambda item: item[1], reverse=True) # sorts dictionary by keyword value in reverse(first is highest)
-    kw_downsample = kw_counts[:number_data_points]  # Get the top N keywords
-    keywords = [kw[0] for kw in kw_downsample]  # Get the keywords
-    counts = [kw[1] for kw in kw_downsample]  # Get the counts
-
+    kw_sorted = sorted(kw_counts.items(), key=lambda item: item[1], reverse=True) # sorts dictionary by keyword value in reverse(first is highest)
+    keywords, counts = zip(*kw_sorted[:number_data_points])  # Get the top N keywords
+ 
     # Create a DataFrame from the keyword counts
     df_plot = pd.DataFrame({
         "keyword": keywords,
         "count": counts
-    }).sort_values(by="count", ascending=True)
+    }).sort_values("count",ascending=True)
 
     # Plot setup
-    sns.set(style="whitegrid")
     plt.figure(figsize=(14, 10))
-    colors = sns.color_palette("viridis", len(df_plot))
+    colors = sns.color_palette("tab10", len(df_plot))
 
-    sns.barplot(
+    ax = sns.barplot(
         data=df_plot,
         x="count",
         y="keyword",
@@ -37,6 +34,11 @@ def create_weekly_data(number_data_points=5):
         dodge=False,          # prevent weird bar splitting
         orient='h'
     )
+    
+    # Fix axis range (critical!)
+    ax.set_xlim(0, max(counts))  # Force x-axis to start at 0
+
+
     plt.legend([], [], frameon=False)  # removes the legend
 
     plt.xticks(size=12, color="#757575")
@@ -49,6 +51,7 @@ def create_weekly_data(number_data_points=5):
     plt.title("Frequency of Keywords in Subreddits", color="#323232", size = 20)
     plt.tight_layout() # has to be here, otherwise graph gets clipped
     plt.savefig(f"created_data/{date.today()}_kw.png", dpi=300)
+    plt.close()
 
 def create_data_alltime():
     with file_lock:
