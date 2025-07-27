@@ -77,7 +77,6 @@ def continuous_collection():
                     logging.debug("⏳ No new posts, waiting...")
                     time.sleep(30)
                     continue
-                logging.info(f"📝 New post in r/{post.subreddit}: {post.title[:50]}...")
                 if post.id in seen_ids:
                     # If the post ID is already seen, skip it
                     continue

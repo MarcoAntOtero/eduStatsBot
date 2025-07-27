@@ -2,6 +2,7 @@ import praw
 from dotenv import load_dotenv
 import os
 import logging
+import requests
 
 load_dotenv()
 
@@ -14,13 +15,18 @@ user_agent = os.getenv("user_agent")
 def authenticateReddit():
     try:
         reddit = praw.Reddit(
-        client_id=client_id,
-        client_secret=client_secret,
-        username=username,
-        password=password,
-        user_agent=user_agent,
-        check_for_async=False,  # Disable async checks (sync-only mode)
-        ratelimit_seconds=300,  # Add rate limit buffer
+            client_id=client_id,
+            client_secret=client_secret,
+            username=username,
+            password=password,
+            user_agent=user_agent,
+            timeout=30,
+            requestor_kwargs={
+                "session":requests.Session(),
+                "timeout":30,
+            },
+            ratelimit_seconds=600,  # Add rate limit buffer
+            check_for_async=False,  # Disable async checks (sync-only mode)
         )
         if reddit.user.me() is None:
             raise ValueError("Authentication failed. Please check credentials.")
