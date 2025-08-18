@@ -71,7 +71,7 @@ def create_data_alltime():
         markersize=8
     )
     plt.legend([], [], frameon=False)  # removes the legend
-    plt.xticks(size=12, color="#757575")
+    plt.xticks(size=12, color="#757575", rotation='vertical')
     plt.yticks(size=12, color="#757575")
     sns.despine(left=True)
 
