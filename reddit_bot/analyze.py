@@ -45,7 +45,7 @@ def clean_and_analyze(filename):
         
 
 def count_kw(df):
-    df["combined_text"] = (df["title"] + " " + df["selftext"]).str.lower()
+    df.loc[:,"combined_text"] = (df["title"] + " " + df["selftext"]).str.lower()
     kw_counts = {kw.strip().lower() : 0 for kw in load_keywords()}  # Initialize counts for each keyword
     for i in df["combined_text"]:
         for keyword in kw_counts:
